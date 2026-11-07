@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>바른시선 작업 현황판</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 한 장짜리 상황판 — 위에서 아래로 「결정 대기 → 프로젝트 → 칼럼 달력 → 루틴 · 기록」, 요약이 먼저, 세부는 아래 */
+:root {
+  --bg: #f3f5f4;
+  --surface: #ffffff;
+  --sunken: #e8ecea;
+  --ink: #17211d;
+  --muted: #5b6862;
+  --line: #d3dad6;
+  --accent: #1d5c4b;        /* 한약장 녹색 */
+  --accent-soft: #dcebe5;
+  --ok: #2f7d4f;   --ok-soft: #dff1e6;
+  --run: #2b5f9e;  --run-soft: #e0eaf7;
+  --wait: #9a6400; --wait-soft: #fbefd5;
+  --stop: #b2352b; --stop-soft: #fbe2df;
+  --idle: #6b7470; --idle-soft: #e7eae8;
+  --font-display: "Gowun Batang", "Nanum Myeongjo", "Apple SD Gothic Neo", serif;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111715; --surface: #18201d; --sunken: #0d1211; --ink: #e5ece8; --muted: #9aa8a1; --line: #2b3632;
+    --accent: #6cc0a3; --accent-soft: #1d3a31;
+    --ok: #6fcf93; --ok-soft: #173326; --run: #8ab7ec; --run-soft: #1a2a40;
+    --wait: #e8b75a; --wait-soft: #3a2c10; --stop: #f08a80; --stop-soft: #3d1c19; --idle: #a3ada8; --idle-soft: #242c29;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111715; --surface: #18201d; --sunken: #0d1211; --ink: #e5ece8; --muted: #9aa8a1; --line: #2b3632;
+  --accent: #6cc0a3; --accent-soft: #1d3a31;
+  --ok: #6fcf93; --ok-soft: #173326; --run: #8ab7ec; --run-soft: #1a2a40;
+  --wait: #e8b75a; --wait-soft: #3a2c10; --stop: #f08a80; --stop-soft: #3d1c19; --idle: #a3ada8; --idle-soft: #242c29;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.6 var(--font-body);
+  word-break: keep-all; overflow-wrap: anywhere;
+}
+.wrap {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+  display: grid; gap: 40px;
+}
+.wrap > *, .two > * { min-width: 0; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-size: 1.3rem; letter-spacing: -0.01em; }
+h3 { font-size: 1rem; font-weight: 600; }
+p { margin: 0; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: .74rem; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 14px; }
+.section-head p { color: var(--muted); font-size: .88rem; }
+
+/* ---------- 머리 ---------- */
+header.top { display: grid; gap: 18px; }
+.title-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 24px; }
+.title-row h1 { font-family: var(--font-display); font-size: clamp(1.7rem, 4vw, 2.3rem); line-height: 1.2; }
+.asof { color: var(--muted); font-size: .9rem; }
+.asof b { color: var(--ink); font-weight: 600; }
+.asof-box { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.asof .stale { color: var(--wait); font-weight: 600; }
+.reload { font: inherit; font-size: .84rem; cursor: pointer; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.reload:disabled { opacity: .6; cursor: progress; }
+.load-error { background: var(--stop-soft); color: var(--stop); border-radius: var(--radius); padding: 12px 16px; font-size: .9rem; }
+body.locked .needs-unlock { display: none !important; }
+body:not(.locked) .lock { display: none; }
+.lock { display: grid; justify-items: start; }
+.lock-card { width: 100%; max-width: 440px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 22px 18px; display: grid; gap: 10px; }
+.lock-card p { color: var(--muted); font-size: .9rem; }
+.lock-card label { font-size: .84rem; font-weight: 600; }
+.lock-row { display: flex; gap: 8px; }
+.lock-row input { flex: 1; min-width: 0; font: inherit; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.lock-row button { font: inherit; font-weight: 600; padding: 8px 18px; border-radius: 8px; border: 0; background: var(--accent); color: var(--surface); cursor: pointer; }
+.lock-row button:disabled { opacity: .7; cursor: progress; }
+.lock-card .remember { display: flex; align-items: center; gap: 8px; font-weight: 400; color: var(--muted); }
+.lock-msg { min-height: 1.4em; color: var(--stop) !important; font-weight: 600; }
+.dday { font-family: var(--font-data); font-size: .76rem; font-weight: 500; color: var(--stop); margin-left: 6px; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.kpi { background: var(--surface); padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.kpi .v { font-family: var(--font-data); font-size: 1.7rem; font-weight: 500; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.kpi .v small { font-size: .95rem; color: var(--muted); }
+.kpi .k { font-size: .84rem; color: var(--muted); }
+.kpi.alert .v { color: var(--wait); }
+@media (max-width: 720px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---------- 결정 대기 ---------- */
+.decide { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.decide li {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 14px; align-items: start;
+}
+.decide .when { font-family: var(--font-data); font-size: .8rem; color: var(--muted); white-space: nowrap; padding-top: 2px; }
+.decide .what { font-weight: 600; }
+.decide .why { grid-column: 2 / 4; color: var(--muted); font-size: .9rem; }
+.decide .prio { width: 9px; height: 9px; border-radius: 50%; margin-top: 8px; grid-row: 1 / 3; }
+.prio.high { background: var(--stop); } .prio.mid { background: var(--wait); } .prio.low { background: var(--idle); }
+@media (max-width: 560px) {
+  .decide li { grid-template-columns: auto minmax(0, 1fr); }
+  .decide .when { grid-column: 2; grid-row: 2; }
+  .decide .why { grid-column: 2; }
+}
+
+/* ---------- 상태 칩 ---------- */
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; line-height: 1.6; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.s-ok   { color: var(--ok);   background: var(--ok-soft); }
+.s-run  { color: var(--run);  background: var(--run-soft); }
+.s-wait { color: var(--wait); background: var(--wait-soft); }
+.s-stop { color: var(--stop); background: var(--stop-soft); }
+.s-idle { color: var(--idle); background: var(--idle-soft); }
+
+/* ---------- 프로젝트 ---------- */
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.filters button {
+  font: inherit; font-size: .84rem; cursor: pointer; padding: 4px 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+.filters button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.projects { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: 14px; }
+.proj {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px 18px; display: grid; gap: 12px; align-content: start; min-width: 0;
+}
+.proj-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.proj-head .cat { font-size: .74rem; color: var(--muted); letter-spacing: .04em; margin-bottom: 2px; }
+.proj-head h3 { font-size: 1.06rem; }
+.proj .summary { font-size: .93rem; }
+.meter { display: grid; gap: 4px; }
+.meter .bar { height: 6px; border-radius: 3px; background: var(--sunken); overflow: hidden; }
+.meter .bar span { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.meter .lab { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); }
+.kv { display: grid; grid-template-columns: 4.6em minmax(0, 1fr); gap: 6px 10px; margin: 0; font-size: .88rem; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+.links { display: flex; flex-wrap: wrap; gap: 6px; }
+.links a, .quick a {
+  display: inline-flex; align-items: center; gap: 6px; font-size: .84rem; font-weight: 600; text-decoration: none;
+  padding: 4px 11px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); border: 1px solid transparent;
+}
+.links a::after, .quick a::after { content: "↗"; font-weight: 400; opacity: .7; }
+.links a:hover, .quick a:hover { border-color: var(--accent); }
+.quick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.quick .lab { font-size: .8rem; color: var(--muted); font-weight: 600; margin-right: 2px; }
+.proj .where { font-size: .78rem; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 10px; font-family: var(--font-data); overflow-wrap: anywhere; }
+.proj.gap { border-style: dashed; background: transparent; }
+
+/* ---------- 칼럼 달력 ---------- */
+.cal-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .82rem; color: var(--muted); }
+.cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.sw.pub { background: var(--accent); } .sw.ready { background: var(--accent-soft); border: 1px solid var(--accent); } .sw.today { background: var(--surface); outline: 2px solid var(--wait); }
+.cal-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.cal { display: grid; grid-template-columns: 44px repeat(30, minmax(30px, 1fr)); min-width: 980px; font-size: .74rem; }
+.cal .rowlab { padding: 6px 8px; color: var(--muted); font-weight: 600; display: flex; align-items: center; border-right: 1px solid var(--line); }
+.cal .d { text-align: center; padding: 6px 0 4px; color: var(--muted); font-family: var(--font-data); border-bottom: 1px solid var(--line); line-height: 1.25; }
+.cal .d.sun { color: var(--stop); }
+.cal .d.today { color: var(--wait); font-weight: 600; }
+.cal .cell { margin: 3px 2px; height: 26px; border-radius: 4px; border: 0; cursor: pointer; padding: 0; }
+.cal .cell.pub { background: var(--accent); }
+.cal .cell.ready { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.cal .cell.special { background: var(--wait-soft); box-shadow: inset 0 0 0 1px var(--wait); }
+.cal .cell[aria-pressed="true"] { outline: 2px solid var(--ink); outline-offset: 1px; }
+.cal-detail { margin-top: 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 640px) { .cal-detail { grid-template-columns: minmax(0, 1fr); } }
+.slot { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 4px; min-width: 0; }
+.slot .t { font-size: .78rem; color: var(--muted); }
+.slot .topic { font-weight: 600; }
+.slot .slug { font-family: var(--font-data); font-size: .78rem; color: var(--muted); }
+.slot .flags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+
+/* ---------- 두 칸 영역 ---------- */
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
+@media (max-width: 860px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.table-scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .78rem; color: var(--muted); font-weight: 600; letter-spacing: .03em; }
+td.mono { font-family: var(--font-data); font-size: .82rem; white-space: nowrap; }
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.timeline li { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: .9rem; }
+.timeline .dt { font-family: var(--font-data); color: var(--muted); font-size: .82rem; padding-top: 1px; }
+
+/* ---------- 세션 ---------- */
+.sessions { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.sess { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 11px 2px; border-bottom: 1px solid var(--line); }
+.sess a { font-weight: 600; text-decoration: none; color: var(--ink); }
+.sess a:hover { text-decoration: underline; }
+.sess .note { grid-column: 1 / 3; color: var(--muted); font-size: .86rem; }
+.sess .meta { font-family: var(--font-data); font-size: .78rem; color: var(--muted); white-space: nowrap; text-align: right; }
+
+footer { color: var(--muted); font-size: .84rem; display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 18px; }
+footer code { font-family: var(--font-data); font-size: .8rem; background: var(--sunken); padding: 1px 5px; border-radius: 4px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .meter .bar span { transition: width .6s ease; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="title-row">
+      <div>
+        <div class="eyebrow">바른시선한의원 · 원장님 업무</div>
+        <h1>바른시선 작업 현황판</h1>
+      </div>
+      <div class="asof-box needs-unlock">
+        <p class="asof">마지막 갱신 <b class="num" id="asof">—</b> <span id="ago"></span></p>
+        <button type="button" class="reload" id="reload">새로 불러오기</button>
+        <button type="button" class="reload" id="lock-now">잠그기</button>
+      </div>
+    </div>
+    <div class="kpis needs-unlock" id="kpis"></div>
+    <nav class="quick needs-unlock" id="quick" aria-label="바로가기"></nav>
+  </header>
+
+  <section class="lock" aria-labelledby="h-lock">
+    <form class="lock-card" id="lock-form">
+      <h2 id="h-lock">비밀번호를 입력해 주세요</h2>
+      <p>이 현황판의 내용은 암호화돼 있어, 비밀번호를 아는 사람만 볼 수 있습니다.</p>
+      <label for="pw">비밀번호</label>
+      <div class="lock-row">
+        <input id="pw" type="password" autocomplete="current-password" required>
+        <button type="submit" id="unlock-btn">열기</button>
+      </div>
+      <label class="remember" for="remember"><input id="remember" type="checkbox"> 이 기기에서 기억하기 (내 기기에서만)</label>
+      <p class="lock-msg" id="lock-msg" role="alert"></p>
+    </form>
+  </section>
+
+  <section class="needs-unlock" aria-labelledby="h-decide">
+    <div class="section-head">
+      <h2 id="h-decide">원장님 확인 · 결정 대기</h2>
+      <p>Claude가 원장님 답을 기다리며 멈춰 있는 일입니다. 위에서부터 급한 순서.</p>
+    </div>
+    <ul class="decide" id="decide"></ul>
+  </section>
+
+  <section class="needs-unlock" aria-labelledby="h-proj">
+    <div class="section-head">
+      <h2 id="h-proj">프로젝트별 현황</h2>
+      <div class="filters" id="filters" role="group" aria-label="상태로 거르기"></div>
+    </div>
+    <div class="projects" id="projects"></div>
+  </section>
+
+  <section class="needs-unlock" aria-labelledby="h-cal">
+    <div class="section-head">
+      <h2 id="h-cal">칼럼 발행 달력 <span class="num" id="cal-range" style="font-size:.9rem;font-weight:400"></span></h2>
+      <div class="cal-legend">
+        <span><i class="sw pub"></i>발행됨</span>
+        <span><i class="sw ready"></i>예약 초안 + 원고 · 카드뉴스 · 영상 준비됨</span>
+        <span><i class="sw today"></i>오늘</span>
+      </div>
+    </div>
+    <div class="cal-scroll"><div class="cal" id="cal"></div></div>
+    <div class="cal-detail" id="cal-detail" aria-live="polite"></div>
+  </section>
+
+  <div class="two needs-unlock">
+    <section aria-labelledby="h-routine">
+      <div class="section-head"><h2 id="h-routine">자동으로 도는 루틴</h2></div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>루틴</th><th>언제</th><th>하는 일</th></tr></thead>
+          <tbody id="routines"></tbody>
+        </table>
+      </div>
+    </section>
+    <section aria-labelledby="h-done">
+      <div class="section-head"><h2 id="h-done">최근 끝난 일</h2></div>
+      <ul class="timeline" id="done"></ul>
+    </section>
+  </div>
+
+  <section class="needs-unlock" aria-labelledby="h-sess">
+    <div class="section-head">
+      <h2 id="h-sess">Claude 대화(세션) 목록</h2>
+      <p>제목을 누르면 그 대화로 이동합니다.</p>
+    </div>
+    <div class="sessions" id="sessions"></div>
+  </section>
+
+  <footer class="needs-unlock">
+    <p>내용은 암호화된 <code>status.enc.js</code> 한 파일에서 읽습니다. Claude가 <span id="src"></span>을 모아 이 파일을 고칩니다. 날짜에 따라 바뀌는 부분(오늘 표시, 발행 여부, 남은 날짜)은 페이지를 열 때마다 바로 다시 계산합니다.</p>
+    <p>환자 개인정보는 넣지 않습니다. 바로 갱신이 필요하면 Claude에게 「작업 현황판 갱신해줘」라고 말씀하세요.</p>
+  </footer>
+</div>
+
+<script>
+// =============================================================
+//  내용은 status.js(window.STATUS)에서 읽는다.
+//  열 때 · 「새로 불러오기」 · 15분마다 status.js 를 새로 받아 다시 그린다.
+//  status: ok(순항·완료) · run(진행 중) · wait(결정 대기) · stop(막힘) · idle(쉬는 중)
+// =============================================================
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const chip = (status, label) => `<span class="chip s-${status}">${esc(label)}</span>`;
+const STATUS_NAME = { ok: "순항 · 완료", run: "진행 중", wait: "결정 대기", stop: "막힘", idle: "쉬는 중" };
+const WD = ["일", "월", "화", "수", "목", "금", "토"];
+const DAY = 86400000;
+
+// ---- 한국 시간 기준 날짜 계산 ----
+const kstNow = () => new Date(Date.now() + 9 * 3600000);          // UTC 게터로 읽으면 한국 시각
+const ymd = (d) => d.toISOString().slice(0, 10);                   // KST Date → "YYYY-MM-DD"
+const parseYmd = (s) => new Date(s + "T00:00:00Z");                 // "YYYY-MM-DD" → KST 자정(UTC 게터용)
+const mmdd = (d) => `${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+const md = (d) => `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
+function slotPublished(dateStr, hhmm, now) {                         // 발행 시각 + 15분이 지났으면 발행됨
+  const [h, m] = hhmm.split(":").map(Number);
+  return parseYmd(dateStr).getTime() + (h * 60 + m + 15) * 60000 <= now.getTime();
+}
+function fmtAgo(ms) {
+  const min = Math.round(ms / 60000);
+  if (min < 1) return "방금";
+  if (min < 60) return `${min}분 전`;
+  const h = Math.round(min / 60);
+  if (h < 48) return `${h}시간 전`;
+  return `${Math.round(h / 24)}일 전`;
+}
+
+let selectedDay = null;
+
+function render(D) {
+  const now = kstNow();
+  const today = ymd(now);
+
+  // ---- 갱신 시각 ----
+  const upd = new Date(D.updatedAt);
+  const age = Date.now() - upd.getTime();
+  const updK = new Date(upd.getTime() + 9 * 3600000);
+  $("asof").textContent = `${md(updK)} ${String(updK.getUTCHours()).padStart(2, "0")}:${String(updK.getUTCMinutes()).padStart(2, "0")}`;
+  $("ago").innerHTML = age > 36 * 3600000
+    ? `<span class="stale">(${fmtAgo(age)} · 오래됨)</span>` : `(${fmtAgo(age)})`;
+  $("src").textContent = D.source || "Claude 세션 기록";
+
+  // ---- 칼럼 달력 범위 · 발행 수 (오늘 날짜로 바로 계산) ----
+  const cal = D.calendar;
+  const days = [];
+  for (let t = parseYmd(cal.start).getTime(); t <= parseYmd(cal.end).getTime(); t += DAY) days.push(new Date(t));
+  const slots = Object.keys(cal.slots);
+  let published = 0, remaining = 0;
+  days.forEach((d) => slots.forEach((s) => { slotPublished(ymd(d), cal.slots[s], now) ? published++ : remaining++; }));
+  const endLeft = Math.ceil((parseYmd(cal.end).getTime() - parseYmd(today).getTime()) / DAY);
+
+  // ---- 요약 숫자 ----
+  const kpis = [
+    { v: String(remaining), unit: "편", k: `남은 예약 칼럼 (${md(parseYmd(cal.end))}까지 · ${endLeft >= 0 ? "D-" + endLeft : "끝남"})`, alert: endLeft >= 0 && endLeft <= 7 },
+    { v: String(D.kpis.mediaSets), unit: `/${D.kpis.mediaSets}`, k: "블로그 · 카드뉴스 · 영상 세트" },
+    { v: String(D.projects.filter((p) => p.status === "run" || p.status === "ok").length), unit: `/${D.projects.length}`, k: "순조롭게 도는 프로젝트" },
+    { v: String(D.decisions.length), unit: "건", k: "원장님 결정 대기", alert: D.decisions.length > 0 },
+  ];
+  $("kpis").innerHTML = kpis.map((i) =>
+    `<div class="kpi${i.alert ? " alert" : ""}"><div class="v">${esc(i.v)}<small>${esc(i.unit)}</small></div><div class="k">${esc(i.k)}</div></div>`
+  ).join("");
+
+  // ---- 바로가기 ----
+  const quick = safeLinks(D.quicklinks);
+  $("quick").innerHTML = quick.length ? `<span class="lab">바로가기</span>${quick.map(linkA).join("")}` : "";
+  $("quick").hidden = !quick.length;
+
+  // ---- 결정 대기 (마감일이 있으면 D-day) ----
+  $("decide").innerHTML = D.decisions.map((d) => {
+    let dday = "";
+    if (d.due) {
+      const n = Math.ceil((parseYmd(d.due).getTime() - parseYmd(today).getTime()) / DAY);
+      dday = `<span class="dday">${n > 0 ? "D-" + n : n === 0 ? "오늘" : "지남 " + -n + "일"}</span>`;
+    }
+    return `
+    <li>
+      <span class="prio ${d.prio}" aria-label="${d.prio === "high" ? "급함" : d.prio === "mid" ? "보통" : "낮음"}"></span>
+      <span class="what">${esc(d.what)}</span>
+      <span class="when">${esc(d.when)}${dday}</span>
+      <span class="why">${esc(d.why)}</span>
+    </li>`;
+  }).join("");
+
+  // ---- 프로젝트 ----
+  $("projects").innerHTML = D.projects.map(projectCard).join("");
+  buildFilters(D.projects);
+
+  // ---- 달력 ----
+  $("cal-range").textContent = `${md(days[0])} – ${md(days[days.length - 1])} · 발행 ${published} · 남음 ${remaining}`;
+  const calEl = $("cal");
+  calEl.style.gridTemplateColumns = `44px repeat(${days.length}, minmax(30px, 1fr))`;
+  let html = `<div class="rowlab"></div>`;
+  html += days.map((d, i) => {
+    const cls = ["d", d.getUTCDay() === 0 ? "sun" : "", ymd(d) === today ? "today" : ""].join(" ");
+    const top = (d.getUTCDate() === 1 || i === 0) ? md(d) : d.getUTCDate();
+    return `<div class="${cls}">${top}<br>${WD[d.getUTCDay()]}</div>`;
+  }).join("");
+  slots.forEach((slot) => {
+    html += `<div class="rowlab">${cal.slots[slot].slice(0, 2)}시</div>`;
+    html += days.map((d) => {
+      const k = mmdd(d);
+      const info = (D.columns[k] || {})[slot];
+      const state = slotPublished(ymd(d), cal.slots[slot], now) ? "pub" : (info && info[2] === "special" ? "special" : "ready");
+      const label = `${md(d)} ${cal.slots[slot]} ${info ? info[0] : "예약 초안"}`;
+      return `<button type="button" class="cell ${state}" data-day="${ymd(d)}" aria-label="${esc(label)}" title="${esc(label)}"></button>`;
+    }).join("");
+  });
+  calEl.innerHTML = html;
+
+  function show(dayStr) {
+    selectedDay = dayStr;
+    calEl.querySelectorAll(".cell").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.day === dayStr)));
+    const d = parseYmd(dayStr);
+    const entry = D.columns[mmdd(d)] || {};
+    $("cal-detail").innerHTML = slots.map((slot) => {
+      const info = entry[slot];
+      const topic = info ? info[0] : (slot === "A" ? "다이어트 · 피부 글감" : "스탠퍼드 진찰법 글감");
+      const slug = info && info[1] ? info[1] : "글감 이름은 기록에 없음";
+      const pub = slotPublished(dayStr, cal.slots[slot], now);
+      const media = dayStr >= cal.mediaFrom;
+      const flags = pub
+        ? chip("ok", "발행됨")
+        : `${chip("ok", "초안")}${media ? chip("ok", "블로그 원고") + chip("ok", "카드뉴스") + chip("ok", "영상") : ""}${info && info[2] === "special" ? chip("wait", "자보 특집") : ""}`;
+      return `<div class="slot">
+          <div class="t">${md(d)} (${WD[d.getUTCDay()]}) ${cal.slots[slot]} · ${slot === "A" ? "A 다이어트 · 피부" : "B 스탠퍼드"}</div>
+          <div class="topic">${esc(topic)}</div>
+          <div class="slug">${esc(slug)}</div>
+          <div class="flags">${flags}</div>
+        </div>`;
+    }).join("");
+  }
+  calEl.onclick = (e) => { const c = e.target.closest(".cell"); if (c) show(c.dataset.day); };
+  // 처음엔 다음에 발행될 칸이 있는 날을 보여 줌
+  const inRange = (s) => s >= cal.start && s <= cal.end;
+  let first = selectedDay && inRange(selectedDay) ? selectedDay : null;
+  if (!first) {
+    const next = days.find((d) => slots.some((s) => !slotPublished(ymd(d), cal.slots[s], now)));
+    first = ymd(next || days[days.length - 1]);
+  }
+  show(first);
+
+  // ---- 루틴 · 끝난 일 · 세션 ----
+  $("routines").innerHTML = D.routines.map(([n, w, t]) => `<tr><td class="mono">${esc(n)}</td><td>${esc(w)}</td><td>${esc(t)}</td></tr>`).join("");
+  $("done").innerHTML = D.done.map(([d, t]) => `<li><span class="dt">${esc(d)}</span><span>${esc(t)}</span></li>`).join("");
+  $("sessions").innerHTML = D.sessions.map((s) => `
+    <div class="sess">
+      ${sessLink(s)}
+      <span class="meta">${chip(s.status, s.label)} <span class="num">${esc(s.date)}</span></span>
+      <span class="note">${esc(s.note)}</span>
+    </div>`).join("");
+}
+
+// 세션 링크 — url 이 있으면 그 주소(claude.ai 의 https 또는 데스크톱 앱 claude:// 만), 없으면 claude.ai/code/<id>
+const SESS_URL = /^(https:\/\/claude\.ai\/|claude:\/\/claude\.ai\/)/;
+function sessLink(s) {
+  const url = s.url && SESS_URL.test(s.url) ? s.url : `https://claude.ai/code/${encodeURIComponent(s.id)}`;
+  const app = url.startsWith("claude://");
+  return app
+    ? `<a href="${esc(url)}" title="PC의 Claude 데스크톱 앱에서 열립니다">${esc(s.title)}</a>`
+    : `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`;
+}
+
+// 링크는 https 주소만 그린다
+const safeLinks = (links) => (links || []).filter((l) => Array.isArray(l) && /^https:\/\//.test(l[1] || ""));
+const linkA = ([label, url]) => `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a>`;
+function linkList(links) {
+  const ok = safeLinks(links);
+  return ok.length ? `<div class="links">${ok.map(linkA).join("")}</div>` : "";
+}
+
+function projectCard(p) {
+  const meter = p.meter ? `
+    <div class="meter">
+      <div class="bar" role="img" aria-label="${esc(p.meter.label)} ${p.meter.done}/${p.meter.total}"><span style="width:${Math.round((p.meter.done / Math.max(p.meter.total, 1)) * 100)}%"></span></div>
+      <div class="lab"><span>${esc(p.meter.label)}</span><span class="num">${p.meter.done} / ${p.meter.total}</span></div>
+    </div>` : "";
+  const rows = p.rows && p.rows.length
+    ? `<dl class="kv">${p.rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` : "";
+  return `
+    <article class="proj" data-status="${esc(p.status)}">
+      <div class="proj-head">
+        <div><div class="cat">${esc(p.cat)}</div><h3>${esc(p.name)}</h3></div>
+        ${chip(p.status, p.label)}
+      </div>
+      <p class="summary">${esc(p.summary)}</p>
+      ${meter}
+      ${rows}
+      ${linkList(p.links)}
+      <div class="where">${esc(p.where)}</div>
+    </article>`;
+}
+
+const FILTER_KEY = "barunsiseon-dash-filter";
+function applyFilter(f) {
+  document.querySelectorAll("#filters button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.f === f)));
+  document.querySelectorAll(".proj").forEach((el) => { el.hidden = f !== "all" && el.dataset.status !== f; });
+  try { localStorage.setItem(FILTER_KEY, f); } catch (e) {}
+}
+function buildFilters(projects) {
+  const counts = {};
+  projects.forEach((p) => { counts[p.status] = (counts[p.status] || 0) + 1; });
+  const order = ["wait", "stop", "run", "ok", "idle"].filter((s) => counts[s]);
+  $("filters").innerHTML = `<button type="button" data-f="all">전체 ${projects.length}</button>` +
+    order.map((s) => `<button type="button" data-f="${s}">${STATUS_NAME[s]} ${counts[s]}</button>`).join("");
+  let saved = "all";
+  try { saved = localStorage.getItem(FILTER_KEY) || "all"; } catch (e) {}
+  if (saved !== "all" && !counts[saved]) saved = "all";
+  applyFilter(saved);
+}
+$("filters").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) applyFilter(b.dataset.f); });
+
+// =============================================================
+//  잠금 풀기 — 내용(status.enc.js)은 암호화돼 있고, 비밀번호로 비밀 키를 풀어 읽는다.
+//  「이 기기에서 기억하기」는 비밀번호가 아니라 꺼낼 수 없는 형태의 열쇠(CryptoKey)를
+//  이 브라우저의 IndexedDB 에만 저장한다. 「잠그기」를 누르면 지운다.
+// =============================================================
+const subtle = window.crypto && window.crypto.subtle;
+const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+let privKey = null;
+let current = null;
+
+const IDB = { name: "barunsiseon-dashboard", store: "keys" };
+function idb(mode, fn) {
+  return new Promise((resolve, reject) => {
+    let req;
+    try { req = indexedDB.open(IDB.name, 1); } catch (e) { reject(e); return; }
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB.store);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      const tx = req.result.transaction(IDB.store, mode);
+      const r = fn(tx.objectStore(IDB.store));
+      tx.oncomplete = () => resolve(r && r.result);
+      tx.onerror = () => reject(tx.error);
+    };
+  });
+}
+const rememberKey = (k) => idb("readwrite", (s) => s.put(k, "priv")).catch(() => {});
+const recallKey = () => idb("readonly", (s) => s.get("priv")).catch(() => null);
+const forgetKey = () => idb("readwrite", (s) => s.delete("priv")).catch(() => {});
+
+async function unlockWithPassword(pw) {
+  const L = window.DASH_KEY.privateKey;
+  const base = await subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  const k = await subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt: unb64(L.salt), iterations: L.iter }, base,
+    { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  const pkcs8 = await subtle.decrypt({ name: "AES-GCM", iv: unb64(L.iv) }, k, unb64(L.data)); // 틀리면 여기서 실패
+  return subtle.importKey("pkcs8", pkcs8, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["decrypt"]);
+}
+async function decryptStatus(key) {
+  const box = window.STATUS_ENC;
+  const raw = await subtle.decrypt({ name: "RSA-OAEP" }, key, unb64(box.key));
+  const aes = await subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]);
+  const json = await subtle.decrypt({ name: "AES-GCM", iv: unb64(box.iv) }, aes, unb64(box.data));
+  return JSON.parse(new TextDecoder().decode(json));
+}
+
+function setLocked(locked) {
+  document.body.classList.toggle("locked", locked);
+  if (locked) {
+    current = null;
+    ["kpis", "quick", "decide", "projects", "filters", "cal", "cal-detail", "routines", "done", "sessions"].forEach((id) => { $(id).innerHTML = ""; });
+    setTimeout(() => $("pw").focus(), 0);
+  }
+}
+function showStatus(data) {
+  current = data;
+  setLocked(false);
+  const err = document.getElementById("load-error"); if (err) err.remove();
+  try { render(data); } catch (e) { showError("현황 데이터 형식이 맞지 않습니다: " + e.message); }
+}
+
+function loadScript(id, src) {
+  return new Promise((resolve, reject) => {
+    const old = document.getElementById(id); if (old) old.remove();
+    const sc = document.createElement("script");
+    sc.id = id; sc.src = src + "?t=" + Date.now();            // 캐시를 피하려고 매번 시각을 붙임
+    sc.onload = resolve; sc.onerror = () => reject(new Error(src));
+    document.body.appendChild(sc);
+  });
+}
+
+// 열 때 · 「새로 불러오기」 · 15분마다
+async function loadStatus() {
+  const btn = $("reload");
+  btn.disabled = true; btn.textContent = "불러오는 중…";
+  try {
+    if (!subtle) throw new Error("이 브라우저에서는 암호를 풀 수 없습니다. https 주소로 열어 주세요.");
+    await Promise.all([loadScript("key-script", "dashboard-key.js"), loadScript("status-script", "status.enc.js")]);
+    if (!privKey) privKey = await recallKey();
+    if (!privKey) { setLocked(true); return; }
+    try { showStatus(await decryptStatus(privKey)); }
+    catch (e) { privKey = null; await forgetKey(); setLocked(true); }  // 열쇠가 바뀐 경우
+  } catch (e) {
+    if (current) render(current);
+    else showError(e.message.startsWith("이 브라우저") ? e.message : "현황 파일을 불러오지 못했습니다. 잠시 뒤 「새로 불러오기」를 눌러 주세요.");
+  } finally {
+    btn.disabled = false; btn.textContent = "새로 불러오기";
+  }
+}
+function showError(msg) {
+  let p = document.getElementById("load-error");
+  if (!p) {
+    p = document.createElement("p");
+    p.id = "load-error"; p.className = "load-error";
+    document.querySelector("header.top").appendChild(p);
+  }
+  p.textContent = msg;
+}
+
+$("lock-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = $("unlock-btn"), msg = $("lock-msg");
+  if (!window.DASH_KEY || !window.STATUS_ENC) { msg.textContent = "현황 파일을 아직 불러오지 못했습니다. 잠시 뒤 다시 눌러 주세요."; loadStatus(); return; }
+  btn.disabled = true; btn.textContent = "확인 중…"; msg.textContent = "";
+  try {
+    const key = await unlockWithPassword($("pw").value);
+    const data = await decryptStatus(key);
+    privKey = key;
+    if ($("remember").checked) await rememberKey(key);
+    $("pw").value = "";
+    showStatus(data);
+  } catch (err) {
+    msg.textContent = "비밀번호가 맞지 않습니다.";
+    $("pw").select();
+  } finally {
+    btn.disabled = false; btn.textContent = "열기";
+  }
+});
+$("lock-now").addEventListener("click", async () => { privKey = null; await forgetKey(); setLocked(true); });
+$("reload").addEventListener("click", loadStatus);
+setLocked(true);
+loadStatus();
+setInterval(loadStatus, 15 * 60000);                         // 열어 둔 채로 있어도 15분마다 새로 받음
+document.addEventListener("visibilitychange", () => { if (!document.hidden && current) render(current); });
+</script>
+</body>
+</html>
