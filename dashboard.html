@@ -257,6 +257,19 @@ footer code { font-family: var(--font-data); font-size: .8rem; background: var(-
     </form>
   </section>
 
+  <section class="needs-unlock" aria-labelledby="h-cal">
+    <div class="section-head">
+      <h2 id="h-cal">칼럼 발행 달력 <span class="num" id="cal-range" style="font-size:.9rem;font-weight:400"></span></h2>
+      <div class="cal-legend">
+        <span><i class="sw pub"></i>발행됨</span>
+        <span><i class="sw ready"></i>예약 초안 + 원고 · 카드뉴스 · 영상 준비됨</span>
+        <span><i class="sw today"></i>오늘</span>
+      </div>
+    </div>
+    <div class="cal-scroll"><div class="cal" id="cal"></div></div>
+    <div class="cal-detail" id="cal-detail" aria-live="polite"></div>
+  </section>
+
   <section class="needs-unlock" aria-labelledby="h-decide">
     <div class="section-head">
       <h2 id="h-decide">원장님 확인 · 결정 대기</h2>
@@ -273,18 +286,6 @@ footer code { font-family: var(--font-data); font-size: .8rem; background: var(-
     <div class="projects" id="projects"></div>
   </section>
 
-  <section class="needs-unlock" aria-labelledby="h-cal">
-    <div class="section-head">
-      <h2 id="h-cal">칼럼 발행 달력 <span class="num" id="cal-range" style="font-size:.9rem;font-weight:400"></span></h2>
-      <div class="cal-legend">
-        <span><i class="sw pub"></i>발행됨</span>
-        <span><i class="sw ready"></i>예약 초안 + 원고 · 카드뉴스 · 영상 준비됨</span>
-        <span><i class="sw today"></i>오늘</span>
-      </div>
-    </div>
-    <div class="cal-scroll"><div class="cal" id="cal"></div></div>
-    <div class="cal-detail" id="cal-detail" aria-live="polite"></div>
-  </section>
 
   <div class="two needs-unlock">
     <section aria-labelledby="h-routine">
