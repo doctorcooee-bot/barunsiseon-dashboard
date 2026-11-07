@@ -138,6 +138,14 @@ function checkStatus(d) {
       fail(`${where} 는 [이름, https 주소] 목록이어야 합니다`);
   };
   checkLinks(d.quicklinks, "quicklinks");
+  // blog: { "MM-DD": [[제목, https 주소]] } — 칼럼 달력에서 그날 올라간 네이버 블로그 글
+  if (d.blog !== undefined) {
+    if (!d.blog || typeof d.blog !== "object" || Array.isArray(d.blog)) fail("blog 는 { \"MM-DD\": [[제목, https 주소]] }");
+    for (const [k, v] of Object.entries(d.blog)) {
+      if (!/^\d{2}-\d{2}$/.test(k)) fail(`blog 의 날짜 "${k}" 는 MM-DD`);
+      checkLinks(v, `blog["${k}"]`);
+    }
+  }
   d.projects.forEach((p, i) => checkLinks(p.links, `projects[${i}].links`));
   d.decisions.forEach((x, i) => { if (!x.what || !["high", "mid", "low"].includes(x.prio)) fail(`decisions[${i}] 의 what/prio 오류`); });
   d.sessions.forEach((x, i) => { if (!x.id || !x.title || !ST.includes(x.status)) fail(`sessions[${i}] 의 id/title/status 오류`); });

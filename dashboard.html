@@ -189,6 +189,12 @@ body:not(.locked) .lock { display: none; }
 .slot .topic { font-weight: 600; }
 .slot .slug { font-family: var(--font-data); font-size: .78rem; color: var(--muted); }
 .slot .flags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.slot .go { font-size: .86rem; font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
+.slot .go::after { content: " ↗"; font-weight: 400; opacity: .7; }
+.slot .go:hover { text-decoration: underline; }
+.slot.blogday { grid-column: 1 / -1; }
+.slot.blogday ul { margin: 2px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.slot.blogday .none { font-size: .86rem; color: var(--muted); }
 
 /* ---------- 두 칸 영역 ---------- */
 .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
@@ -438,13 +444,25 @@ function render(D) {
       const flags = pub
         ? chip("ok", "발행됨")
         : `${chip("ok", "초안")}${media ? chip("ok", "블로그 원고") + chip("ok", "카드뉴스") + chip("ok", "영상") : ""}${info && info[2] === "special" ? chip("wait", "자보 특집") : ""}`;
+      // 발행된 칼럼은 홈페이지 주소로 바로 열기 (글 이름이 영문 · 숫자 · - 일 때만)
+      const colUrl = pub && info && /^[a-z0-9-]+$/.test(info[1] || "") ? `https://barunsisun.com/column-${info[1]}.html` : "";
+      const colLink = colUrl ? `<a class="go" href="${esc(colUrl)}" target="_blank" rel="noopener">칼럼 보기</a>` : "";
       return `<div class="slot">
           <div class="t">${md(d)} (${WD[d.getUTCDay()]}) ${cal.slots[slot]} · ${slot === "A" ? "A 다이어트 · 피부" : "B 스탠퍼드"}</div>
           <div class="topic">${esc(topic)}</div>
           <div class="slug">${esc(slug)}</div>
           <div class="flags">${flags}</div>
+          ${colLink}
         </div>`;
-    }).join("");
+    }).join("") + blogDay(d);
+  }
+  // 그날 네이버 블로그에 올라간 글 (갱신 때 블로그 RSS 에서 모은 것)
+  function blogDay(d) {
+    const posts = safeLinks((D.blog || {})[mmdd(d)] || []);
+    const body = posts.length
+      ? `<ul>${posts.map(([t, u]) => `<li><a class="go" href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a></li>`).join("")}</ul>`
+      : `<div class="none">${ymd(d) > ymd(now) ? "아직 올라가지 않았습니다" : "이날 올라간 블로그 글이 없습니다"}</div>`;
+    return `<div class="slot blogday"><div class="t">${md(d)} 네이버 블로그</div>${body}</div>`;
   }
   calEl.onclick = (e) => { const c = e.target.closest(".cell"); if (c) show(c.dataset.day); };
   // 처음엔 다음에 발행될 칸이 있는 날을 보여 줌
