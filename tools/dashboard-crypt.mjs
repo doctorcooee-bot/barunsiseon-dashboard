@@ -146,6 +146,45 @@ function checkStatus(d) {
       checkLinks(v, `blog["${k}"]`);
     }
   }
+  // board: 맨 위 「오늘 한눈에」 칸 — columns · reserve · posts 는 board-data.mjs 가, anatomy 는 갱신 작업이 채운다
+  if (d.board !== undefined) {
+    const b = d.board;
+    if (!b || typeof b !== "object" || Array.isArray(b)) fail("board 는 { columns, reserve, posts, anatomy }");
+    const isObj = (x) => x && typeof x === "object" && !Array.isArray(x);
+    const YMD = /^\d{4}-\d{2}-\d{2}$/;
+    const dayMap = (m, where, okItem) => {
+      if (m === undefined) return;
+      if (!isObj(m)) fail(`${where} 는 { "YYYY-MM-DD": [...] }`);
+      for (const [k, v] of Object.entries(m)) {
+        if (!YMD.test(k)) fail(`${where} 의 날짜 "${k}" 는 YYYY-MM-DD`);
+        if (!Array.isArray(v) || !v.every(okItem)) fail(`${where}["${k}"] 의 항목 형식 오류`);
+      }
+    };
+    const pair = (x) => Array.isArray(x) && x.length === 2 && x.every((s) => typeof s === "string");
+    if (b.columns !== undefined) {
+      if (!isObj(b.columns)) fail("board.columns 형식 오류");
+      dayMap(b.columns.recent, "board.columns.recent", pair);       // [제목, slug]
+      dayMap(b.columns.upcoming, "board.columns.upcoming", pair);
+    }
+    if (b.reserve !== undefined) {
+      if (!isObj(b.reserve)) fail("board.reserve 형식 오류");
+      if (b.reserve.lastRun && isNaN(Date.parse(b.reserve.lastRun))) fail("board.reserve.lastRun 이 날짜가 아닙니다");
+      dayMap(b.reserve.days, "board.reserve.days", (x) => Array.isArray(x) && x.length === 3 && /^\d{2}:\d{2}$/.test(x[1]));   // [블로그, HH:MM, 제목]
+      dayMap(b.reserve.pending, "board.reserve.pending", (x) => typeof x === "string");
+    }
+    if (b.posts !== undefined) {
+      if (!isObj(b.posts)) fail("board.posts 형식 오류");
+      for (const [k, v] of Object.entries(b.posts)) { if (!YMD.test(k)) fail(`board.posts 의 날짜 "${k}" 는 YYYY-MM-DD`); checkLinks(v, `board.posts["${k}"]`); }
+    }
+    if (b.anatomy !== undefined) {
+      // cuts: [ID, 이름, 단계 0~4 (0 시작 전 · 1 기획 · 2 러프·구도 · 3 제작·검수 · 4 배포), 메모?, 원장님 승인 대기?]
+      if (!isObj(b.anatomy) || !Array.isArray(b.anatomy.cuts)) fail("board.anatomy.cuts 는 목록이어야 합니다");
+      b.anatomy.cuts.forEach((c, i) => {
+        if (!Array.isArray(c) || typeof c[0] !== "string" || typeof c[1] !== "string" || ![0, 1, 2, 3, 4].includes(c[2]))
+          fail(`board.anatomy.cuts[${i}] 는 [ID, 이름, 단계 0~4, 메모?, 승인 대기?]`);
+      });
+    }
+  }
   d.projects.forEach((p, i) => checkLinks(p.links, `projects[${i}].links`));
   d.decisions.forEach((x, i) => { if (!x.what || !["high", "mid", "low"].includes(x.prio)) fail(`decisions[${i}] 의 what/prio 오류`); });
   d.sessions.forEach((x, i) => { if (!x.id || !x.title || !ST.includes(x.status)) fail(`sessions[${i}] 의 id/title/status 오류`); });

@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: 한 장짜리 상황판 — 위에서 아래로 「결정 대기 → 프로젝트 → 칼럼 달력 → 루틴 · 기록」, 요약이 먼저, 세부는 아래 */
+/* Layout: 한 장짜리 상황판 — 맨 위 「오늘 한눈에」(칼럼 · 블로그 예약 · 블로그 발행 · 해부도), 그 아래로 「결정 대기 → 프로젝트 → 칼럼 달력 → 루틴 · 기록」, 요약이 먼저, 세부는 아래 */
 :root {
   --bg: #f3f5f4;
   --surface: #ffffff;
@@ -104,6 +104,59 @@ body:not(.locked) .lock { display: none; }
 .kpi .k { font-size: .84rem; color: var(--muted); }
 .kpi.alert .v { color: var(--wait); }
 @media (max-width: 720px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* ---- 오늘 한눈에: 칼럼 발행 · 블로그 예약 · 블로그 발행 · 해부도 (status.json 의 board) ---- */
+.board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+@media (max-width: 760px) { .board { grid-template-columns: minmax(0, 1fr); } }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.tile-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tile-head h2 { margin: 0; font: 600 .92rem/1.4 var(--font-body); color: var(--muted); letter-spacing: 0; }
+.tile .big { font-size: 1.15rem; font-weight: 600; line-height: 1.3; }
+.tile .big b { font-family: var(--font-data); font-weight: 500; font-size: 1.7rem; font-variant-numeric: tabular-nums; }
+.tile .foot { font-size: .82rem; color: var(--muted); }
+.tile .warnline { font-size: .84rem; color: var(--wait); }
+.tile .links { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: .86rem; }
+.tile .links li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile .links a { color: var(--accent); }
+.tile details { font-size: .84rem; }
+.tile summary { cursor: pointer; color: var(--muted); }
+.tile details ul { margin: 6px 0 0; padding-left: 18px; }
+.days { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; }
+.day { background: var(--sunken); border-radius: 8px; padding: 6px 2px 7px; text-align: center; min-width: 0; }
+.day.today { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+.day .dl { font-size: .72rem; color: var(--muted); line-height: 1.3; }
+.day .dots { display: flex; justify-content: center; align-items: center; gap: 3px; min-height: 14px; margin-top: 4px; flex-wrap: wrap; color: var(--muted); font-size: .72rem; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); flex: none; }
+.dot.plan { background: transparent; border: 2px solid var(--run); }
+.dot.b2 { background: var(--run); }
+.keyline { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: .78rem; color: var(--muted); }
+.keyline .dot { display: inline-block; width: 8px; height: 8px; margin-right: 5px; vertical-align: 1px; }
+.keyline i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+.rsv { display: grid; gap: 4px; align-items: stretch; }
+.rsv .h { color: var(--muted); text-align: center; font-size: .72rem; line-height: 1.3; }
+.rsv .h.today { color: var(--accent); font-weight: 600; }
+.rsv .who { color: var(--muted); align-self: center; padding-right: 4px; font: .72rem var(--font-data); }
+.rsv .c { border-radius: 8px; padding: 7px 2px; text-align: center; font: 500 .8rem var(--font-data); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rsv .c.ok { background: var(--ok-soft); color: var(--ok); }
+.rsv .c.pub, .rsv .c.no { background: var(--sunken); color: var(--muted); }
+.bar { display: flex; height: 14px; border-radius: 999px; overflow: hidden; background: var(--sunken); }
+.bar span { display: block; height: 100%; }
+.bar .b-done, .keyline .b-done { background: var(--ok); }
+.bar .b-work, .keyline .b-work { background: var(--run); }
+.bar .b-wait, .keyline .b-wait { background: var(--wait); }
+.bar .b-todo, .keyline .b-todo { background: var(--line); }
+.cuts { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: .86rem; }
+.cuts li { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.cuts .id { font: .76rem var(--font-data); color: var(--muted); }
+.cuts .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cuts .st { font-size: .76rem; color: var(--muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.cuts .st.w { color: var(--wait); font-weight: 600; }
+.steps { display: inline-flex; gap: 3px; }
+.steps i { width: 12px; height: 6px; border-radius: 3px; background: var(--line); }
+.steps i.on { background: var(--run); }
+.steps.w i.on { background: var(--wait); }
+.taglist { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 6px; }
+.taglist span { background: var(--sunken); border-radius: 6px; padding: 1px 7px; font-size: .78rem; }
+.taglist span b { font: 500 .72rem var(--font-data); color: var(--muted); margin-right: 4px; }
 
 /* ---------- 결정 대기 ---------- */
 .decide { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
@@ -239,6 +292,7 @@ footer code { font-family: var(--font-data); font-size: .8rem; background: var(-
         <button type="button" class="reload" id="lock-now">잠그기</button>
       </div>
     </div>
+    <div class="board needs-unlock" id="board" aria-label="오늘 한눈에"></div>
     <div class="kpis needs-unlock" id="kpis"></div>
     <nav class="quick needs-unlock" id="quick" aria-label="바로가기"></nav>
   </header>
@@ -351,6 +405,123 @@ function fmtAgo(ms) {
 
 let selectedDay = null;
 
+// ---- 오늘 한눈에: 칼럼 발행 · 블로그 예약 · 블로그 발행 · 해부도 ----
+// D.board 는 갱신 때 board-data.mjs 가 채운다 (anatomy 만 갱신 작업이 컷 목록을 보고 고친다). 없으면 칸을 숨긴다.
+const ANAT_STAGE = ["시작 전", "기획", "러프 · 구도", "제작 · 검수", "배포"];
+function renderBoard(D, now, upd) {
+  const el = $("board"), B = D.board;
+  if (!B) { el.hidden = true; return; }
+  el.hidden = false;
+  const today = ymd(now);
+  const pad = (n) => String(n).padStart(2, "0");
+  const dayAt = (n) => ymd(new Date(parseYmd(today).getTime() + n * DAY));
+  const lab = (s) => { const d = parseYmd(s); return `${md(d)}<br>${WD[d.getUTCDay()]}`; };
+  const updK = new Date(upd.getTime() + 9 * 3600000);              // 갱신 시각 (한국 시간)
+  const updDay = ymd(updK), updHm = `${pad(updK.getUTCHours())}:${pad(updK.getUTCMinutes())}`;
+  const freshAfter = (hhmm) => updDay > today || (updDay === today && updHm >= hhmm);   // 자료가 오늘 그 시각 뒤에 모은 것인지
+  const plus = (hhmm, min) => { const [h, m] = hhmm.split(":").map(Number); const t = h * 60 + m + min; return `${pad(Math.floor(t / 60))}:${pad(t % 60)}`; };
+  const tile = (title, chipHtml, body) => `<section class="tile"><div class="tile-head"><h2>${title}</h2>${chipHtml}</div>${body}</section>`;
+  const titles = (list) => esc(list.map((x) => x[0]).join(" · "));
+  const tiles = [];
+
+  // 1) 칼럼 발행 — 지난 3일 · 오늘 · 앞으로 3일
+  {
+    const C = B.columns || {}, rec = C.recent || {}, up = C.upcoming || {};
+    const nPub = (rec[today] || []).length, nPlan = (up[today] || []).length;
+    const strip = [-3, -2, -1, 0, 1, 2, 3].map(dayAt).map((d) => {
+      const pubs = rec[d] || [], plans = d >= today ? (up[d] || []) : [];
+      const dots = pubs.map(() => `<span class="dot"></span>`).join("") + plans.map(() => `<span class="dot plan"></span>`).join("");
+      return `<div class="day${d === today ? " today" : ""}" title="${titles(pubs.concat(plans))}"><div class="dl">${lab(d)}</div><div class="dots">${dots || "·"}</div></div>`;
+    }).join("");
+    const chipHtml = nPub ? chip("ok", "발행됨") : nPlan ? (freshAfter("07:30") ? chip("wait", "확인 필요") : chip("run", "07시 예정")) : chip("idle", "오늘 없음");
+    const big = nPub ? `오늘 <b>${nPub}</b>편 발행` : nPlan ? `오늘 <b>${nPlan}</b>편 발행 예정` : "오늘 발행할 칼럼 없음";
+    const links = (rec[today] || []).filter((x) => /^[a-z0-9-]+$/.test(x[1] || "")).map((x) =>
+      `<li><a href="https://barunsisun.com/column-${x[1]}.html" target="_blank" rel="noopener">${esc(x[0])}</a></li>`).join("");
+    const foot = C.draftCount ? `예약 초안 ${C.draftCount}편 남음${C.draftUntil ? ` · ${md(parseYmd(C.draftUntil))} 발행분까지` : ""}` : "남은 예약 초안 없음";
+    tiles.push(tile("칼럼 발행 (홈페이지)", chipHtml, `<div class="big">${big}</div><div class="days">${strip}</div>
+      <div class="keyline"><span><span class="dot"></span>발행됨</span><span><span class="dot plan"></span>발행 예정</span></div>
+      ${links ? `<ul class="links">${links}</ul>` : ""}<div class="foot">${esc(foot)}</div>`));
+  }
+
+  // 2) 블로그 예약 상태 — 오늘부터 3일 뒤까지, 블로그 두 곳
+  {
+    const R = B.reserve || {}, days = R.days || {}, pending = R.pending || {};
+    const rdays = [0, 1, 2, 3].map(dayAt);
+    const blogs = ["doccooee", "barunwell"];
+    let grid = `<div class="h"></div>` + rdays.map((d) => `<div class="h${d === today ? " today" : ""}">${lab(d)}</div>`).join("");
+    blogs.forEach((b) => {
+      grid += `<div class="who">${b}</div>` + rdays.map((d) => {
+        const items = (days[d] || []).filter((x) => x[0] === b);
+        if (!items.length) return `<div class="c no">–</div>`;
+        const gone = d < today || (d === today && items.every((x) => plus(x[1], 15) <= `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`));
+        const more = items.length > 1 ? ` +${items.length - 1}` : "";
+        const tip = esc(items.map((x) => `${x[1]} ${x[2]}`).join(" · "));
+        return gone ? `<div class="c pub" title="${tip}">발행${more}</div>` : `<div class="c ok" title="${tip}">✓ ${esc(items[0][1])}${more}</div>`;
+      }).join("");
+    });
+    const pendList = Object.keys(pending).sort().flatMap((d) => (pending[d] || []).map((t) => [d, t]));
+    const lastDay = Object.keys(days).filter((d) => (days[d] || []).length).sort().pop();
+    const last = R.lastRun ? new Date(R.lastRun) : null;
+    const lastK = last && !isNaN(last) ? new Date(last.getTime() + 9 * 3600000) : null;
+    const ranOnUpdDay = lastK && ymd(lastK) === updDay;
+    const missed = lastK && !ranOnUpdDay && updHm >= "09:30";       // 자료를 모은 날 09:30 이 지났는데 그날 실행 기록이 없음
+    const chipHtml = missed ? chip("stop", "루틴 안 돎") : pendList.length ? chip("wait", `미예약 ${pendList.length}편`) : chip("ok", "정상");
+    const big = lastDay ? `<b>${md(parseYmd(lastDay))}</b> 글까지 예약됨` : "예약된 글 없음";
+    const listed = rdays.flatMap((d) => (days[d] || []).map((x) => `<li>${md(parseYmd(d))} ${esc(x[1])} · ${esc(x[0])} · ${esc(x[2])}</li>`)).join("");
+    const foot = lastK ? `Aside 루틴 마지막 실행 ${md(lastK)} ${pad(lastK.getUTCHours())}:${pad(lastK.getUTCMinutes())}${ranOnUpdDay || updHm < "09:30" ? "" : " — 오늘 기록 없음"}` : "Aside 루틴 실행 기록을 읽지 못했습니다";
+    tiles.push(tile("블로그 예약 (네이버 · Aside)", chipHtml, `<div class="big">${big}</div>
+      <div class="rsv" style="grid-template-columns:auto repeat(${rdays.length}, minmax(0, 1fr))">${grid}</div>
+      ${pendList.length ? `<div class="warnline">예약 안 된 글: ${pendList.map(([d, t]) => `${md(parseYmd(d))} ${esc(t)}`).join(" · ")}</div>` : ""}
+      ${listed ? `<details><summary>예약된 글 보기</summary><ul>${listed}</ul></details>` : ""}<div class="foot">${esc(foot)}</div>`));
+  }
+
+  // 3) 블로그 발행 — 최근 7일, 블로그 두 곳
+  {
+    const P = B.posts || {}, pdays = [-6, -5, -4, -3, -2, -1, 0].map(dayAt);
+    const isB2 = (x) => /\/barunwell\//.test(x[1] || "");
+    let n1 = 0, n2 = 0;
+    const strip = pdays.map((d) => {
+      const posts = safeLinks(P[d] || []);
+      posts.forEach((x) => { isB2(x) ? n2++ : n1++; });
+      const dots = posts.map((x) => `<span class="dot${isB2(x) ? " b2" : ""}"></span>`).join("");
+      return `<div class="day${d === today ? " today" : ""}" title="${titles(posts)}"><div class="dl">${lab(d)}</div><div class="dots">${dots || "·"}</div></div>`;
+    }).join("");
+    const todayPosts = safeLinks(P[today] || []);
+    const due = updDay === today ? ((B.reserve || {}).days || {})[today] || [] : [];
+    const expected = due.filter((x) => plus(x[1], 30) <= updHm).length;       // 자료를 모을 때 이미 나갔어야 하는 예약 글
+    const chipHtml = todayPosts.length < expected ? chip("wait", "발행 확인 필요") : todayPosts.length ? chip("ok", `오늘 ${todayPosts.length}편`) : chip("idle", "오늘 아직 없음");
+    const links = todayPosts.map((x) => `<li><a href="${esc(x[1])}" target="_blank" rel="noopener">${esc(x[0])}</a></li>`).join("");
+    tiles.push(tile("블로그 발행 (최근 7일)", chipHtml, `<div class="big">최근 7일 <b>${n1 + n2}</b>편</div><div class="days">${strip}</div>
+      <div class="keyline"><span><span class="dot"></span>doccooee ${n1}</span><span><span class="dot b2"></span>barunwell ${n2}</span></div>
+      ${links ? `<ul class="links">${links}</ul>` : ""}<div class="foot">마지막 갱신 때 블로그 공개 목록(RSS)에서 읽은 것</div>`));
+  }
+
+  // 4) 해부도 — 컷 목록과 제작 단계
+  {
+    const cuts = ((B.anatomy || {}).cuts || []).map(([id, name, stage, note, wait]) => ({ id, name, stage: Number(stage) || 0, note: note || "", wait: !!wait }));
+    const done = cuts.filter((c) => c.stage >= 4), todo = cuts.filter((c) => c.stage <= 0);
+    const act = cuts.filter((c) => c.stage > 0 && c.stage < 4);
+    const waitN = act.filter((c) => c.wait).length, workN = act.length - waitN;
+    const total = cuts.length || 1;
+    const seg = (n, cls) => n ? `<span class="${cls}" style="width:${(n / total * 100).toFixed(2)}%"></span>` : "";
+    const rows = act.sort((a, b) => b.stage - a.stage || Number(b.wait) - Number(a.wait)).map((c) => {
+      const steps = [1, 2, 3, 4].map((i) => `<i class="${i <= c.stage ? "on" : ""}"></i>`).join("");
+      const text = c.wait ? (c.note || "원장님 승인 대기") : (c.note || ANAT_STAGE[c.stage]);
+      return `<li><span class="id">${esc(c.id)}</span><span class="nm">${esc(c.name)}</span><span class="st${c.wait ? " w" : ""}"><span class="steps${c.wait ? " w" : ""}">${steps}</span>${esc(text)}</span></li>`;
+    }).join("");
+    const tags = (list) => `<div class="taglist">${list.map((c) => `<span title="${esc(c.note)}"><b>${esc(c.id)}</b>${esc(c.name)}</span>`).join("")}</div>`;
+    const chipHtml = waitN ? chip("wait", `승인 대기 ${waitN}`) : workN ? chip("run", `제작 중 ${workN}`) : chip("ok", "대기 없음");
+    tiles.push(tile("해부도 제작", chipHtml, `<div class="big"><b>${done.length}</b>/${cuts.length}컷 배포</div>
+      <div class="bar" role="img" aria-label="배포 ${done.length}, 제작 중 ${workN}, 승인 대기 ${waitN}, 시작 전 ${todo.length}">${seg(done.length, "b-done")}${seg(workN, "b-work")}${seg(waitN, "b-wait")}${seg(todo.length, "b-todo")}</div>
+      <div class="keyline"><span><i class="b-done"></i>배포 ${done.length}</span><span><i class="b-work"></i>제작 중 ${workN}</span><span><i class="b-wait"></i>승인 대기 ${waitN}</span><span><i class="b-todo"></i>시작 전 ${todo.length}</span></div>
+      ${rows ? `<ul class="cuts">${rows}</ul>` : ""}
+      ${done.length ? `<details><summary>배포한 컷 ${done.length}개</summary>${tags(done)}</details>` : ""}
+      ${todo.length ? `<details><summary>시작 전 컷 ${todo.length}개</summary>${tags(todo)}</details>` : ""}`));
+  }
+
+  el.innerHTML = tiles.join("");
+}
+
 function render(D) {
   const now = kstNow();
   const today = ymd(now);
@@ -364,6 +535,8 @@ function render(D) {
     ? `<span class="stale">(${fmtAgo(age)} · 오래됨)</span>` : `(${fmtAgo(age)})`;
   $("src").textContent = D.source || "Claude 세션 기록";
 
+  renderBoard(D, now, upd);
+
   // ---- 칼럼 달력 범위 · 발행 수 (오늘 날짜로 바로 계산) ----
   const cal = D.calendar;
   const days = [];
@@ -375,7 +548,9 @@ function render(D) {
 
   // ---- 요약 숫자 ----
   const kpis = [
-    { v: String(remaining), unit: "편", k: `남은 예약 칼럼 (${md(parseYmd(cal.end))}까지 · ${endLeft >= 0 ? "D-" + endLeft : "끝남"})`, alert: endLeft >= 0 && endLeft <= 7 },
+    (D.board && D.board.columns && typeof D.board.columns.draftCount === "number")       // 실제 예약 초안 수 (board-data.mjs 가 센 것)
+      ? { v: String(D.board.columns.draftCount), unit: "편", k: `남은 예약 초안${D.board.columns.draftUntil ? ` (${md(parseYmd(D.board.columns.draftUntil))} 발행분까지)` : ""}`, alert: D.board.columns.draftCount <= 6 }
+      : { v: String(remaining), unit: "편", k: `남은 예약 칼럼 (${md(parseYmd(cal.end))}까지 · ${endLeft >= 0 ? "D-" + endLeft : "끝남"})`, alert: endLeft >= 0 && endLeft <= 7 },
     { v: String(D.kpis.mediaSets), unit: `/${D.kpis.mediaSets}`, k: "블로그 · 카드뉴스 · 영상 세트" },
     { v: String(D.projects.filter((p) => p.status === "run" || p.status === "ok").length), unit: `/${D.projects.length}`, k: "순조롭게 도는 프로젝트" },
     { v: String(D.decisions.length), unit: "건", k: "원장님 결정 대기", alert: D.decisions.length > 0 },
