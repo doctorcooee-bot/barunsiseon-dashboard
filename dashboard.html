@@ -248,6 +248,25 @@ body:not(.locked) .lock { display: none; }
 .slot.blogday { grid-column: 1 / -1; }
 .slot.blogday ul { margin: 2px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .slot.blogday .none { font-size: .86rem; color: var(--muted); }
+/* 달력 (새 기준, board.cal): 한 주 한 줄 — 동그라미 = 홈페이지 칼럼(실제 발행일), 네모 = 네이버 블로그 글 */
+.mcal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); font-size: .74rem; }
+.mcal .wd { text-align: center; padding: 6px 0; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); }
+.mcal .wd.sun { color: var(--stop); }
+.mcal .mday { border: 0; border-top: 1px solid var(--line); border-left: 1px solid var(--line); background: transparent; padding: 6px 5px 8px; min-height: 64px; text-align: left; cursor: pointer; display: grid; gap: 5px; align-content: start; font: inherit; color: inherit; min-width: 0; }
+.mcal .mday.first { border-left: 0; }
+.mcal .mday.week1 { border-top: 0; }
+.mcal .mday.past { background: var(--sunken); }
+.mcal .mday.today { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+.mcal .mday[aria-pressed="true"] { outline: 2px solid var(--ink); outline-offset: -2px; }
+.mcal .dn { font-family: var(--font-data); color: var(--muted); }
+.mcal .mday.sun .dn { color: var(--stop); }
+.mcal .mday.today .dn { color: var(--accent); font-weight: 600; }
+.mcal .marks { display: flex; flex-wrap: wrap; gap: 3px; min-height: 10px; align-items: center; }
+.sq { width: 9px; height: 9px; border-radius: 2px; background: var(--ok); flex: none; display: inline-block; }
+.sq.b2 { background: var(--run); }
+.sq.plan { background: transparent; border: 2px solid var(--ok); }
+.sq.b2.plan { border-color: var(--run); }
+.cal-legend .dot, .cal-legend .sq { display: inline-block; }
 
 /* ---------- 두 칸 영역 ---------- */
 .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
@@ -314,7 +333,7 @@ footer code { font-family: var(--font-data); font-size: .8rem; background: var(-
   <section class="needs-unlock" aria-labelledby="h-cal">
     <div class="section-head">
       <h2 id="h-cal">칼럼 발행 달력 <span class="num" id="cal-range" style="font-size:.9rem;font-weight:400"></span></h2>
-      <div class="cal-legend">
+      <div class="cal-legend" id="cal-legend">
         <span><i class="sw pub"></i>발행됨</span>
         <span><i class="sw ready"></i>예약 초안 + 원고 · 카드뉴스 · 영상 준비됨</span>
         <span><i class="sw today"></i>오늘</span>
@@ -522,6 +541,75 @@ function renderBoard(D, now, upd) {
   el.innerHTML = tiles.join("");
 }
 
+// ---- 칼럼 발행 달력 (새 기준, 2026-11-27 원장님) ----
+// 날짜 = 홈페이지에 실제로 나간 날(예약 초안은 나갈 날). 동그라미 = 칼럼, 네모 = 그날 네이버 블로그 글(발행 · 예약).
+// D.board.cal 은 board-data.mjs 가 채운다: { start, end, cols:{날짜:[[제목, slug, "pub"|"plan", 블로그 발행일?]]}, posts:{날짜:[[제목, 주소]]} }
+let selectedDay2 = null;
+function renderCalendar2(D, now) {
+  const C = D.board.cal, today = ymd(now);
+  const cols = C.cols || {}, posts = C.posts || {}, rsv = ((D.board.reserve || {}).days) || {};
+  const days = [];
+  for (let t = parseYmd(C.start).getTime(); t <= parseYmd(C.end).getTime(); t += DAY) days.push(ymd(new Date(t)));
+  const isB2 = (u) => /\/barunwell\//.test(u || "");
+  const blogName = (u) => isB2(u) ? "barunwell" : "doccooee";
+  const postsOf = (d) => safeLinks(posts[d] || []);
+  // 예약만 걸려 있고 아직 올라가지 않은 글 (오늘 이후) — 그 블로그에 그날 올라간 글 수만큼은 이미 나간 것으로 본다
+  const reservedOf = (d) => {
+    if (d < today) return [];
+    const left = { doccooee: postsOf(d).filter((x) => !isB2(x[1])).length, barunwell: postsOf(d).filter((x) => isB2(x[1])).length };
+    return (rsv[d] || []).filter((x) => left[x[0]]-- <= 0);
+  };
+  let nPub = 0, nPlan = 0;
+  days.forEach((d) => (cols[d] || []).forEach((c) => { c[2] === "plan" ? nPlan++ : nPub++; }));
+  $("cal-range").textContent = `${md(parseYmd(C.start))} – ${md(parseYmd(C.end))} · 칼럼 발행 ${nPub} · 예정 ${nPlan}`;
+  $("cal-legend").innerHTML = `<span><span class="dot"></span>칼럼 발행</span><span><span class="dot plan"></span>칼럼 예정</span>
+    <span><span class="sq"></span>블로그 doccooee</span><span><span class="sq b2"></span>블로그 barunwell</span><span><span class="sq plan"></span>블로그 예약</span>`;
+
+  const calEl = $("cal");
+  calEl.className = "mcal";
+  calEl.style.gridTemplateColumns = "";
+  let html = ["월", "화", "수", "목", "금", "토", "일"].map((w, i) => `<div class="wd${i === 6 ? " sun" : ""}">${w}</div>`).join("");
+  html += days.map((d, i) => {
+    const dt = parseYmd(d);
+    const colMarks = (cols[d] || []).map((c) => `<span class="dot${c[2] === "plan" ? " plan" : ""}"></span>`).join("");
+    const blogMarks = postsOf(d).map((x) => `<span class="sq${isB2(x[1]) ? " b2" : ""}"></span>`).join("")
+      + reservedOf(d).map((x) => `<span class="sq plan${x[0] === "barunwell" ? " b2" : ""}"></span>`).join("");
+    const cls = ["mday", i % 7 === 0 ? "first" : "", i < 7 ? "week1" : "", dt.getUTCDay() === 0 ? "sun" : "", d === today ? "today" : d < today ? "past" : ""].join(" ");
+    const num = (dt.getUTCDate() === 1 || i === 0) ? md(dt) : dt.getUTCDate();
+    const label = `${md(dt)} 칼럼 ${(cols[d] || []).length}편 · 블로그 ${postsOf(d).length + reservedOf(d).length}편`;
+    return `<button type="button" class="${cls}" data-day="${d}" aria-label="${esc(label)}"><span class="dn">${num}</span><span class="marks">${colMarks}</span><span class="marks">${blogMarks}</span></button>`;
+  }).join("");
+  calEl.innerHTML = html;
+
+  function show(d) {
+    selectedDay2 = d;
+    calEl.querySelectorAll(".mday").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.day === d)));
+    const dt = parseYmd(d), head = `${md(dt)} (${WD[dt.getUTCDay()]})`;
+    const colCards = (cols[d] || []).map((c) => {
+      const plan = c[2] === "plan";
+      const url = !plan && /^[a-z0-9-]+$/.test(c[1] || "") ? `https://barunsisun.com/column-${c[1]}.html` : "";
+      const flags = plan
+        ? chip("run", "발행 예정") + (c[3] ? chip("idle", `블로그 ${md(parseYmd(c[3]))}`) : "")
+        : chip("ok", "발행됨");
+      return `<div class="slot">
+          <div class="t">${head} · 홈페이지 칼럼</div>
+          <div class="topic">${esc(c[0])}</div>
+          <div class="slug">${esc(c[1])}</div>
+          <div class="flags">${flags}</div>
+          ${url ? `<a class="go" href="${esc(url)}" target="_blank" rel="noopener">칼럼 보기</a>` : ""}
+        </div>`;
+    }).join("") || `<div class="slot"><div class="t">${head} · 홈페이지 칼럼</div><div class="none" style="color:var(--muted);font-size:.86rem">${d > today ? "이날 나갈 예약 초안이 없습니다" : "이날 나간 칼럼이 없습니다"}</div></div>`;
+    const posted = postsOf(d).map((x) => `<li><a class="go" href="${esc(x[1])}" target="_blank" rel="noopener">${esc(x[0])}</a> <span style="color:var(--muted);font-size:.78rem">${blogName(x[1])}</span></li>`).join("");
+    const reserved = reservedOf(d).map((x) => `<li>${esc(x[2])} <span style="color:var(--muted);font-size:.78rem">${esc(x[1])} 예약 · ${esc(x[0])}</span></li>`).join("");
+    const blogBody = posted || reserved
+      ? `<ul>${posted}${reserved}</ul>`
+      : `<div class="none">${d > today ? "아직 예약된 블로그 글이 없습니다 (발행일 3일 전에 예약됩니다)" : "이날 올라간 블로그 글이 없습니다"}</div>`;
+    $("cal-detail").innerHTML = colCards + `<div class="slot blogday"><div class="t">${head} · 네이버 블로그</div>${blogBody}</div>`;
+  }
+  calEl.onclick = (e) => { const c = e.target.closest(".mday"); if (c) show(c.dataset.day); };
+  show(selectedDay2 && selectedDay2 >= C.start && selectedDay2 <= C.end ? selectedDay2 : (today >= C.start && today <= C.end ? today : days[days.length - 1]));
+}
+
 function render(D) {
   const now = kstNow();
   const today = ymd(now);
@@ -649,6 +737,7 @@ function render(D) {
     first = ymd(next || days[days.length - 1]);
   }
   show(first);
+  if (D.board && D.board.cal) renderCalendar2(D, now);      // 새 기준 달력이 있으면 그것으로 다시 그린다
 
   // ---- 루틴 · 끝난 일 · 세션 ----
   $("routines").innerHTML = D.routines.map(([n, w, t]) => `<tr><td class="mono">${esc(n)}</td><td>${esc(w)}</td><td>${esc(t)}</td></tr>`).join("");

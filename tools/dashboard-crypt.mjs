@@ -176,6 +176,15 @@ function checkStatus(d) {
       if (!isObj(b.posts)) fail("board.posts 형식 오류");
       for (const [k, v] of Object.entries(b.posts)) { if (!YMD.test(k)) fail(`board.posts 의 날짜 "${k}" 는 YYYY-MM-DD`); checkLinks(v, `board.posts["${k}"]`); }
     }
+    if (b.cal !== undefined) {
+      // 칼럼 발행 달력: cols 의 항목은 [제목, slug, "pub"|"plan", 블로그 발행일?], posts 는 [제목, https 주소]
+      if (!isObj(b.cal) || !YMD.test(b.cal.start || "") || !YMD.test(b.cal.end || "")) fail("board.cal 의 start · end 는 YYYY-MM-DD");
+      dayMap(b.cal.cols, "board.cal.cols", (x) => Array.isArray(x) && typeof x[0] === "string" && typeof x[1] === "string" && ["pub", "plan"].includes(x[2]));
+      if (b.cal.posts !== undefined) {
+        if (!isObj(b.cal.posts)) fail("board.cal.posts 형식 오류");
+        for (const [k, v] of Object.entries(b.cal.posts)) { if (!YMD.test(k)) fail(`board.cal.posts 의 날짜 "${k}" 는 YYYY-MM-DD`); checkLinks(v, `board.cal.posts["${k}"]`); }
+      }
+    }
     if (b.anatomy !== undefined) {
       // cuts: [ID, 이름, 단계 0~4 (0 시작 전 · 1 기획 · 2 러프·구도 · 3 제작·검수 · 4 배포), 메모?, 원장님 승인 대기?]
       if (!isObj(b.anatomy) || !Array.isArray(b.anatomy.cuts)) fail("board.anatomy.cuts 는 목록이어야 합니다");
